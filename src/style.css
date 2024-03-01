@@ -22,7 +22,7 @@ body
 
 .content {
     left:30px;
-    top:200px;
+    top:100px;
     width:45vw;
     position: absolute;z-index: 99;
 }
@@ -58,3 +58,32 @@ canvas {
     background-image:url("../static/bg.png");
 }
 
+.card-product {
+    padding: 24px;
+    border:1px solid red;
+    background:white;
+    width:fit-content;
+    position: absolute;
+    top:0;
+    left:0;
+    transition:1s;
+}
+
+.cards {
+    position: relative;
+    margin:50px 0;
+    height:200px;
+}
+
+.behind {
+    position: absolute;
+    top:-20px;
+    left:-20px;
+    z-index: -1;
+    background-color: tomato;
+}
+
+.is-moving {
+    transform: translate(20px, 20px);
+    opacity: 0;
+}

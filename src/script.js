@@ -86,17 +86,6 @@ const sphere = new THREE.Mesh(geometry, material);
 //scene.add(sphere);
 //scene.add(globe);
 
-// Shader Material
-// const material = new THREE.ShaderMaterial({
-//     side:  THREE.DoubleSide,
-//     uniforms: { 
-//         uAnimate: { value: 0},
-//         time: { value: 0 },
-//         uColor: { value: 0 }
-//     },
-//     vertexShader: vertex,
-//     fragmentShader: fragment
-// })
 let globeModel;
 
 
@@ -108,7 +97,7 @@ const elGroup = new THREE.Group()
 
 const fbxLoader = new FBXLoader()
 fbxLoader.load(
-    'globe-3.fbx',
+    'globe-2.fbx',
     (object) => {
         // object.traverse(function (child) {
         //     if ((child as THREE.Mesh).isMesh) {
@@ -132,7 +121,7 @@ fbxLoader.load(
             object.scale.set(value, value, value);
         }
         gui.add({ scale: 1 }, 'scale').min(0.001).max(5 ).step(0.0001).onChange(updateScale);
-        elGroup.add(object)
+        
         scene.add(object)
 
     },
@@ -142,10 +131,9 @@ fbxLoader.load(
     (error) => {
         console.log(error)
     }
-)
+    )
 
 let pointsGroup = new THREE.Group()
-let pinGroup = new THREE.Group()
 
 async function createGlobe() {
 	// Fetch city data
@@ -156,30 +144,30 @@ async function createGlobe() {
         //console.log(coords)
     
         const fbxLoader = new FBXLoader()
-fbxLoader.load(
-    'pin.fbx',
-    (object) => {
-        // object.traverse(function (child) {
-        //     if ((child as THREE.Mesh).isMesh) {
-        //         // (child as THREE.Mesh).material = material
-        //         if ((child as THREE.Mesh).material) {
-        //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
-        //         }
-        //     }
-        // })
-        object.scale.set(10, 10, 10)
-        object.rotation.y = 4.02
-        object.position.copy(coords)
-        //scene.add(object)
-        object.position.y = 0.38
-    },
-    (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-    },
-    (error) => {
-        console.log(error)
-    }
-)
+// fbxLoader.load(
+//     'pin.fbx',
+//     (object) => {
+//         // object.traverse(function (child) {
+//         //     if ((child as THREE.Mesh).isMesh) {
+//         //         // (child as THREE.Mesh).material = material
+//         //         if ((child as THREE.Mesh).material) {
+//         //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
+//         //         }
+//         //     }
+//         // })
+//         object.scale.set(10, 10, 10)
+//         object.rotation.y = 4.02
+//         object.position.copy(coords)
+//         //scene.add(object)
+//         object.position.y = 0.38
+//     },
+//     (xhr) => {
+//         console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+//     },
+//     (error) => {
+//         console.log(error)
+//     }
+// )
     
         let mesh = new THREE.Mesh(
             new THREE.SphereBufferGeometry(0.05,20,20),
@@ -192,23 +180,24 @@ fbxLoader.load(
         const planeMaterial = new THREE.MeshBasicMaterial({ map: mangoustanTexture, side: THREE.DoubleSide});
         const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
         planeMesh.rotation.y = -Math.PI * 1; // Rotate the plane 90 degrees
-        pinGroup.add(planeMesh)
+        //pinGroup.add(planeMesh)
         scene.add(planeMesh)
         planeMesh.position.copy(coords)
             
         // Set userData for each mesh
         mesh.userData.city = point.city
-        console.log(point.productName)
+        //console.log(point.productName)
         mesh.userData.productName = point.productName
     
-        pointsGroup.add(mesh)
-        elGroup.add(pointsGroup)
+        pointsGroup.add(mesh, planeMesh, globeModel)
         scene.add(pointsGroup)
     
         mesh.position.copy(coords)
     })
-    console.log(pinGroup)
+    //console.log(pinGroup)
     //console.log(pointsGroup)
+    // Add pointsGroup and pinGroup to elGroup after they are populated with children
+    elGroup.add(pointsGroup);
 }
 
 
@@ -246,7 +235,7 @@ function onClick(event) {
 
         const mesh = intersects[0].object;
         console.log(mesh)
-        mesh.scale.set(2,2,2)
+        //mesh.scale.set(2,2,2)
         const title = mesh.userData.city; // Assuming you set userData for each mesh
         const productName = mesh.userData.productName; // Assuming you set userData for each mesh
         //positionHTMLCard(mesh, title, productName)
@@ -366,14 +355,11 @@ groupLight.add(redLight)
  * Animate
  */
 
-gui.add(pinGroup.rotation, 'x').min(-10).max(10).step(0.01).name('lightX')
-gui.add(pinGroup.rotation, 'y').min(-10).max(10).step(0.01).name('lightX')
-gui.add(pinGroup.rotation, 'z').min(-10).max(10).step(0.01).name('lightX')
 
 const clock = new THREE.Clock()
 //console.log(material.uniforms)
 const tick = () =>
-{
+{   
     const elapsedTime = clock.getElapsedTime()
     // Update controls
     controls.update()
@@ -386,7 +372,6 @@ const tick = () =>
         //pointsGroup.rotation.y = elapsedTime * 0.1;
     }
     camera.add(groupLight)
-    pinGroup.rotation.y = camera.rotation.y
     //console.log(pinGroup.rotation.y)
     
     // Call tick again on the next frame
@@ -397,25 +382,103 @@ const tick = () =>
 
 tick()
 
-document.getElementById('next').addEventListener('click', (e) => {
-    // Randomly generate the rotation amount
+
+scene.add(elGroup)
+
+const rotateGlobe = () => {
     const randomRotation = Math.random() * Math.PI * 2; // Random rotation between 0 and 2PI
 
     // Create a GSAP timeline
     const tl = gsap.timeline();
 
     // Add a rotation animation to the timeline for globeModel
-    tl.to(globeModel.rotation, {
+    tl.to(elGroup.rotation, {
         duration: 1, // Duration of the animation in seconds
-        y: globeModel.rotation.y + randomRotation, // Rotate by the random amount
+        y: elGroup.rotation.y + randomRotation, // Rotate by the random amount
         ease: "power2.inOut" // Easing function
     });
     
 
-    // Add a rotation animation to the timeline for pointsGroup
-    tl.to(pointsGroup.rotation, {
-        duration: 1, // Duration of the animation in seconds
-        y: pointsGroup.rotation.y + randomRotation, // Rotate by the random amount
-        ease: "power2.inOut" // Easing function
-    }, 0); // Start the pointsGroup rotation animation at the same time as globeModel
+    //Add a rotation animation to the timeline for pointsGroup
+    // tl.to(globeModel.rotation, {
+    //     duration: 1, // Duration of the animation in seconds
+    //     y: globeModel.rotation.y + randomRotation, // Rotate by the random amount
+    //     ease: "power2.inOut" // Easing function
+    // }, 0); // Start the pointsGroup rotation animation at the same time as globeModel
+
+    // tl.to(pointsGroup.rotation, {
+    //     duration: 1, // Duration of the animation in seconds
+    //     y: pointsGroup.rotation.y + randomRotation, // Rotate by the random amount
+    //     ease: "power2.inOut" // Easing function
+    // }, 0); // Start the pointsGroup rotation animation at the same time as globeModel
+
+
+    
+}
+
+document.getElementById('next').addEventListener('click', (e) => {
+    rotateGlobe();    
 }); 
+
+
+// Select the card elements
+let frontCard = document.querySelector('.front');
+let backCard = document.querySelector('.behind');
+const cards = document.querySelector('.cards')
+
+backCard.addEventListener('click', () => {
+    // Add 'is-moving' class to front card
+    frontCard.classList.add('is-moving');
+
+    // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
+    setTimeout(() => {
+        frontCard.remove();
+        backCard.classList.remove('behind');
+        backCard.classList.add('front');
+
+        // Create a new div for the next back card
+        const newBackCard = document.createElement('div');
+        newBackCard.classList.add('card-product', 'behind');
+        newBackCard.innerHTML = `
+            <div class="card">
+                <img src="../static/dragon.png" alt="" width="100">
+                <h3>La Baie du Miracle</h3>
+            </div>
+        `;
+        
+        // Add click event listener to the new back card (for loop functionality)
+        cards.appendChild(newBackCard);
+        newBackCard.addEventListener('click', moveCard(newBackCard));
+    }, 1000);
+    rotateGlobe();  
+});
+
+const moveCard = (card) => {
+    let frontCard = document.querySelector('.front');
+    card.addEventListener('click', () => {
+        // Add 'is-moving' class to front card
+        frontCard.classList.add('is-moving');
+    
+        // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
+        setTimeout(() => {
+            frontCard.remove();
+            card.classList.remove('behind');
+            card.classList.add('front');
+    
+            // Create a new div for the next back card
+            const newBackCard = document.createElement('div');
+            newBackCard.classList.add('card-product', 'behind');
+            newBackCard.innerHTML = `
+                <div class="card">
+                    <img src="../static/dragon.png" alt="" width="100">
+                    <h3>La Baie du Miracle</h3>
+                </div>
+            `;
+            
+            // Add click event listener to the new back card (for loop functionality)
+            cards.appendChild(newBackCard);
+            newBackCard.addEventListener('click', moveCard(newBackCard));
+        }, 1000);
+    });
+    rotateGlobe();  
+}   
