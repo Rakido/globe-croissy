@@ -233,43 +233,43 @@ function onClick(event) {
     // If there is an intersection with a mesh, handle it
     if (intersects.length > 0) {
 
-        const mesh = intersects[0].object;
-        console.log(mesh)
-        //mesh.scale.set(2,2,2)
-        const title = mesh.userData.city; // Assuming you set userData for each mesh
-        const productName = mesh.userData.productName; // Assuming you set userData for each mesh
+        // const mesh = intersects[0].object;
+        // console.log(mesh)
+        // //mesh.scale.set(2,2,2)
+        // const title = mesh.userData.city; // Assuming you set userData for each mesh
+        //const productName = mesh.userData.productName; // Assuming you set userData for each mesh
         //positionHTMLCard(mesh, title, productName)
         
         // Perform any actions you want here
     }
 }
 
-function positionHTMLCard(mesh, title, productName) {
-    console.log(`Clicked on mesh with title: ${title}`);
-    // Create or update the HTML card
-    let card = document.querySelector('.mesh-card')
-    if (!card) {
-        // Create card if not exists
-        card = document.createElement('div')
-        card.classList.add('mesh-card')
-        document.body.appendChild(card)
-    }
-    // Position the card above the mesh
-    const meshPosition = mesh.getWorldPosition(new THREE.Vector3())
-    const screenPosition = meshPosition.project(camera)
-    const screenWidth = window.innerWidth
-    const screenHeight = window.innerHeight
-    const x = (screenPosition.x + 1) * screenWidth / 2
-    const y = -(screenPosition.y - 1) * screenHeight / 2
-    card.style.left = x + 'px'
-    card.style.top = y + 'px'
-    // Set content of the card
-    card.innerHTML = `
-        <h3>${title}</h3>
-        <p>${productName}</p>
-        <!-- Add any other content you want -->
-    `
-}
+// function positionHTMLCard(mesh, title, productName) {
+//     console.log(`Clicked on mesh with title: ${title}`);
+//     // Create or update the HTML card
+//     let card = document.querySelector('.mesh-card')
+//     if (!card) {
+//         // Create card if not exists
+//         card = document.createElement('div')
+//         card.classList.add('mesh-card')
+//         document.body.appendChild(card)
+//     }
+//     // Position the card above the mesh
+//     const meshPosition = mesh.getWorldPosition(new THREE.Vector3())
+//     const screenPosition = meshPosition.project(camera)
+//     const screenWidth = window.innerWidth
+//     const screenHeight = window.innerHeight
+//     const x = (screenPosition.x + 1) * screenWidth / 2
+//     const y = -(screenPosition.y - 1) * screenHeight / 2
+//     card.style.left = x + 'px'
+//     card.style.top = y + 'px'
+//     // Set content of the card
+//     card.innerHTML = `
+//         <h3>${title}</h3>
+//         <p>${productName}</p>
+//         <!-- Add any other content you want -->
+//     `
+// }
 
 /**
  * Sizes
@@ -306,19 +306,11 @@ camera.position.set(0, 0, -3)
 scene.add(camera)
 gui.add(camera.position, 'y').min(0).max(20).step(0.01).name('camX')
 
-// Orthographic Camera
-// const frutumSize = 2;
-// const aspect = sizes.width / sizes.height;
-// const camera = new THREE.OrthographicCamera( frutumSize * aspect / - 2, frutumSize * aspect / 2, frutumSize / 2, frutumSize / - 2, -1000, 1000 );
-// camera.position.set(0, 0, -2)
-
 // Controls
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 
-/**
- * Renderer
- */
+// Renderer
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     alpha: true
@@ -334,22 +326,22 @@ renderer.setClearColor( 0xFFFFFF, 1 );
 const groupLight = new THREE.Group();
 
 // Create blue light from the right
-const blueLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-blueLight.position.set(10, 0, 0);
-blueLight.target = sphere;
-groupLight.add(blueLight)
+const rightLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+rightLight.position.set(10, 0, 0);
+rightLight.target = sphere;
+groupLight.add(rightLight)
 
 // Create green light from the left
-const greenLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-greenLight.position.set(0, 10, 0);
-greenLight.target = sphere;
-groupLight.add(greenLight)
+const topLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+topLight.position.set(0, 10, 0);
+topLight.target = sphere;
+groupLight.add(topLight)
 
 // Create red light from the top
-const redLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-redLight.position.set(-10, 0, 0);
-redLight.target = sphere;
-groupLight.add(redLight)
+const leftLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+leftLight.position.set(-10, 0, 0);
+leftLight.target = sphere;
+groupLight.add(leftLight)
 
 /**
  * Animate
