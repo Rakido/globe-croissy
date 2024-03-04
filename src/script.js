@@ -17,7 +17,6 @@ import { TextureLoader } from 'three';
 const textureLoader = new TextureLoader();
 
 /* Calculate coordinates */
-
 function calcPosFromLatLngRad(lat, lng) {
     const phi = (lat) * (Math.PI/180)
     const theta = (lng+180) * (Math.PI/180)
@@ -28,6 +27,9 @@ function calcPosFromLatLngRad(lat, lng) {
     return {x,y,z}
 }
 
+
+// Instance array to later stock the fruits data
+const fruits = []
 
 // Function to fetch city data
 const fetchFruits = () => {
@@ -96,7 +98,7 @@ let globeModel;
 const elGroup = new THREE.Group()
 
 const fbxLoader = new FBXLoader()
-fbxLoader.load(
+    fbxLoader.load(
     'globe-2.fbx',
     (object) => {
         // object.traverse(function (child) {
@@ -131,18 +133,19 @@ fbxLoader.load(
     (error) => {
         console.log(error)
     }
-    )
+)
 
 let pointsGroup = new THREE.Group()
+let meshesGroup = new THREE.Group()
 
 async function createGlobe() {
 	// Fetch city data
 	const res = await fetchFruits();
 	const data = await res.json();
     data.fruits.forEach( point => {
+        fruits.push(point)
         let coords = calcPosFromLatLngRad(point.coords.lat, point.coords.lng)
-        //console.log(coords)
-    
+
         const fbxLoader = new FBXLoader()
 // fbxLoader.load(
 //     'pin.fbx',
@@ -180,16 +183,16 @@ async function createGlobe() {
         const planeMaterial = new THREE.MeshBasicMaterial({ map: mangoustanTexture, side: THREE.DoubleSide});
         const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
         planeMesh.rotation.y = -Math.PI * 1; // Rotate the plane 90 degrees
-        //pinGroup.add(planeMesh)
-        scene.add(planeMesh)
+        
+        //scene.add(planeMesh)
         planeMesh.position.copy(coords)
             
         // Set userData for each mesh
         mesh.userData.city = point.city
         //console.log(point.productName)
         mesh.userData.productName = point.productName
-    
-        pointsGroup.add(mesh, planeMesh, globeModel)
+        meshesGroup.add(mesh)
+        pointsGroup.add(meshesGroup, planeMesh, globeModel)
         scene.add(pointsGroup)
     
         mesh.position.copy(coords)
@@ -197,7 +200,8 @@ async function createGlobe() {
     //console.log(pinGroup)
     //console.log(pointsGroup)
     // Add pointsGroup and pinGroup to elGroup after they are populated with children
-    elGroup.add(pointsGroup);
+    elGroup.add(pointsGroup)
+    //console.log(pointsGroup)
 }
 
 
@@ -377,49 +381,33 @@ tick()
 
 scene.add(elGroup)
 
-const rotateGlobe = () => {
+const rotateGlobe = (fruit) => {
+
+    const fruitPos = calcPosFromLatLngRad(fruit.coords.lat, fruit.coords.lng)
+    const angle = Math.atan2(fruitPos.z, fruitPos.x);
+    //const randomMesh = meshesArray[Math.floor(Math.random()*meshesArray.length)];
     const randomRotation = Math.random() * Math.PI * 2; // Random rotation between 0 and 2PI
+    
+    // Update camera position
+    controls.update(); // Ensure the controls are up to date with the camera position
+    console.log(fruitPos)
+    //const targetDirection = randomMesh.position.clone().sub(camera.position).normalize();
 
-    // Create a GSAP timeline
-    const tl = gsap.timeline();
+    // Calculate the angle between the camera direction and the y-axis
+    //const angle = Math.atan2(targetDirection.z, targetDirection.x);
 
-    // Add a rotation animation to the timeline for globeModel
-    tl.to(elGroup.rotation, {
-        duration: 1, // Duration of the animation in seconds
-        y: elGroup.rotation.y + randomRotation, // Rotate by the random amount
-        ease: "power2.inOut" // Easing function
+    gsap.to(elGroup.rotation, {
+        duration: 1,
+        y: angle * Math.PI / 2, // Adjust for starting orientation
+        ease: "power2.inOut"
     });
-    
-
-    //Add a rotation animation to the timeline for pointsGroup
-    // tl.to(globeModel.rotation, {
-    //     duration: 1, // Duration of the animation in seconds
-    //     y: globeModel.rotation.y + randomRotation, // Rotate by the random amount
-    //     ease: "power2.inOut" // Easing function
-    // }, 0); // Start the pointsGroup rotation animation at the same time as globeModel
-
-    // tl.to(pointsGroup.rotation, {
-    //     duration: 1, // Duration of the animation in seconds
-    //     y: pointsGroup.rotation.y + randomRotation, // Rotate by the random amount
-    //     ease: "power2.inOut" // Easing function
-    // }, 0); // Start the pointsGroup rotation animation at the same time as globeModel
-
-
-    
 }
 
-document.getElementById('next').addEventListener('click', (e) => {
-    rotateGlobe();    
-}); 
+const rotateGlobeAndAnimateCards = () => {
+    const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
 
-
-// Select the card elements
-let frontCard = document.querySelector('.front');
-let backCard = document.querySelector('.behind');
-const cards = document.querySelector('.cards')
-
-backCard.addEventListener('click', () => {
     // Add 'is-moving' class to front card
+   
     frontCard.classList.add('is-moving');
 
     // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
@@ -434,43 +422,61 @@ backCard.addEventListener('click', () => {
         newBackCard.innerHTML = `
             <div class="card">
                 <img src="../static/dragon.png" alt="" width="100">
-                <h3>La Baie du Miracle</h3>
+                <h3>${randomFruit.productName}</h3>
             </div>
         `;
-        
+
         // Add click event listener to the new back card (for loop functionality)
         cards.appendChild(newBackCard);
-        newBackCard.addEventListener('click', moveCard(newBackCard));
+        newBackCard.addEventListener('click', () => moveCard(newBackCard, randomFruit)); // Pass randomFruit here
     }, 1000);
-    rotateGlobe();  
+
+    rotateGlobe(randomFruit);
+}
+
+document.getElementById('next').addEventListener('click', (e) => {
+    rotateGlobe();    
+}); 
+
+
+// Select the card elements
+let frontCard = document.querySelector('.front');
+let backCard = document.querySelector('.behind');
+const cards = document.querySelector('.cards')
+
+backCard.addEventListener('click', () => {
+    rotateGlobeAndAnimateCards()
 });
 
 const moveCard = (card) => {
+    // Add 'is-moving' class to front card
     let frontCard = document.querySelector('.front');
-    card.addEventListener('click', () => {
-        // Add 'is-moving' class to front card
-        frontCard.classList.add('is-moving');
-    
-        // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
-        setTimeout(() => {
-            frontCard.remove();
-            card.classList.remove('behind');
-            card.classList.add('front');
-    
-            // Create a new div for the next back card
-            const newBackCard = document.createElement('div');
-            newBackCard.classList.add('card-product', 'behind');
-            newBackCard.innerHTML = `
-                <div class="card">
-                    <img src="../static/dragon.png" alt="" width="100">
-                    <h3>La Baie du Miracle</h3>
-                </div>
-            `;
-            
-            // Add click event listener to the new back card (for loop functionality)
-            cards.appendChild(newBackCard);
-            newBackCard.addEventListener('click', moveCard(newBackCard));
-        }, 1000);
-    });
-    rotateGlobe();  
-}   
+    let backCard = document.querySelector('.behind');
+
+    const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
+    frontCard.classList.add('is-moving');
+
+    // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
+    setTimeout(() => {
+        frontCard.remove();
+        card.classList.remove('behind');
+        card.classList.add('front');
+
+        // Create a new div for the next back card
+        const newBackCard = document.createElement('div');
+        newBackCard.classList.add('card-product', 'behind');
+        newBackCard.innerHTML = `
+            <div class="card">
+                <img src="../static/dragon.png" alt="" width="100">
+                <h3>${randomFruit.productName}</h3>
+                <h3>${randomFruit.city}</h3>
+            </div>
+        `;
+
+        // Add click event listener to the new back card (for loop functionality)
+        cards.appendChild(newBackCard);
+        newBackCard.addEventListener('click', () => moveCard(newBackCard, randomFruit)); // Pass randomFruit here
+    }, 1000);
+
+    rotateGlobe(randomFruit);
+}
