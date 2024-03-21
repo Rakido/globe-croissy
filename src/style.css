@@ -10,10 +10,12 @@ html,
 body
 {
     overflow: hidden;
+    font-family: "Bricolage Grotesque";
+    background-image:url("../static/bg.png");
 }
 
 .content {
-    left:30px;
+    left:90px;
     top:100px;
     width:45vw;
     position: absolute;z-index: 99;
@@ -38,27 +40,42 @@ p {
     line-height: 145%;;
 }
 
-.mesh-card {
-    position: absolute;
-    background:white;
-    padding:24px;
-}
-
 canvas { 
     width: 100%; 
     height: 100%;
-    background-image:url("../static/bg.png");
+
 }
 
 .card-product {
-    padding: 24px;
+    padding: 40px;
     border:1px solid red;
     background:white;
     width:fit-content;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
     position: absolute;
     top:0;
     left:0;
     transition:1s;
+    border-radius:20px;
+    border:1px solid #E9E9E9;
+    background:FFF9F5;
+    text-align: center;
+}
+
+.card-product img {
+    width: 200px;
+    height: 100%;
+    object-fit: cover;
+}
+
+.origin {
+    padding:8px;
+    margin-top:4px;
+    border-radius: 6px;
+    background:#F4EEEB;
+    display: inline-block;
 }
 
 .cards {
@@ -69,10 +86,11 @@ canvas {
 
 .behind {
     position: absolute;
-    top:-20px;
-    left:-20px;
+    top: 20px;
+    left: -20px;
+    transform: rotate(-5deg);
     z-index: -1;
-    background-color: tomato;
+    background-color: #FFF9F5;
 }
 
 .is-moving {
@@ -88,7 +106,7 @@ canvas {
     height: 100% !important;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: end;
 }
 
 canvas {

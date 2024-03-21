@@ -8,7 +8,6 @@ import { TextureLoader } from 'three';
 import gsap from 'gsap'
 
 import map from '../static/textures/earth.jpg'
-import mangoustan from '../static/elmangoustan.png'
 
 const canvasEl = document.querySelector('#globe-3d')
 const containerEl = document.querySelector(".globe-wrapper");
@@ -17,9 +16,16 @@ let renderer, scene, camera, controls, rayCaster, pointer;
 let globeGroup, globeModel, groupLight, globeSelectionOuterMesh;
 
 const params = {
-    imagePinSize:0.15,
-    imagePinTranslateY: 0.25
+    imagePinSize:0.16,
+    imagePinTranslateY: 0.248
 }
+
+// Define rotation variables
+const debugParams = {
+    rotationX: 0,
+    rotationY: 0,
+    rotationZ: 0
+};
 
 const sizes = {
     width: window.innerWidth,
@@ -48,7 +54,7 @@ window.addEventListener("resize", updateSize);
 
 function initScene() {
     
-    renderer = new THREE.WebGLRenderer({canvas: canvasEl, alpha: true});
+    renderer = new THREE.WebGLRenderer({canvas: canvasEl, alpha: true, antialias: true});
     
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -94,7 +100,8 @@ async function createGlobe() {
         (object) => {
             object.position.set(0,0,0)
             object.scale.set(1.80, 1.80, 1.80)
-            globeGroup.add(object)
+            globeModel = object;
+            globeGroup.add(globeModel)
 
         },
         (xhr) => {
@@ -140,13 +147,13 @@ async function createGlobe() {
         /** PLANE TEST */
         const fruitImageTexture = textureLoader.load(point.image);
 
-        const imageMap = new THREE.CircleGeometry(params.imagePinSize, 32); 
+        const imageMap = new THREE.CircleGeometry(params.imagePinSize, 32, 32); 
         const imageMapTexture = new THREE.MeshBasicMaterial({ map: fruitImageTexture, side: THREE.DoubleSide});
         const imageMapMesh = new THREE.Mesh(imageMap, imageMapTexture);
         
         // Update rotation and position of the image
         imageMapMesh.rotation.y = Math.PI * 0.5;
-        imageMapMesh.position.x += 0.01;
+        imageMapMesh.position.x -= 0.01;
         imageMapMesh.position.copy(coords)
         imageMapMesh.position.y += params.imagePinTranslateY;
             
@@ -172,11 +179,11 @@ function createLights() {
 function createOrbitControls() {
     controls = new OrbitControls(camera, canvasEl);
     controls.enablePan = false;
-    // controls.enableZoom = false;
+    controls.enableZoom = false;
     controls.enableDamping = true;
     controls.minPolarAngle = .46 * Math.PI;
     controls.maxPolarAngle = .46 * Math.PI;
-    controls.autoRotate = true;
+    //controls.autoRotate = true;
     controls.autoRotateSpeed *= 1.2;
 
     controls.addEventListener("start", () => {
@@ -205,13 +212,26 @@ function createOrbitControls() {
     });
 }
 
+
+
+
+
+
+
 function createControls() {
-    const gui = new dat.GUI();
-	
+    gui.add(debugParams, 'rotationX', 0, Math.PI * 2).name('Rotation X');
+    gui.add(debugParams, 'rotationY', 0, Math.PI * 2).name('Rotation Y');
+    gui.add(debugParams, 'rotationZ', 0, Math.PI * 2).name('Rotation Z');
 }
+
+
 
 function render() {
     controls.update();
+
+    // if (globeModel) {
+    //     globeModel.rotation.set(debugParams.rotationX, debugParams.rotationY, debugParams.rotationZ);
+    // }
 
     if (isHoverable) {
         rayCaster.setFromCamera(pointer, camera);
@@ -227,7 +247,7 @@ function render() {
 
 
 function updateSize() {
-    const side = Math.min(500, Math.min(window.innerWidth, window.innerHeight) - 50);
+    const side = Math.min(800, Math.min(window.innerWidth, window.innerHeight) - 50);
     containerEl.style.width = side + "px";
     containerEl.style.height = side + "px";
     renderer.setSize(side, side);
@@ -280,11 +300,12 @@ const rotateGlobeAndAnimateCards = () => {
         // Create a new div for the next back card
         const newBackCard = document.createElement('div');
         newBackCard.classList.add('card-product', 'behind');
+        
         newBackCard.innerHTML = `
             <div class="card">
-                <img src="../static/dragon.png" alt="" width="100">
+                <img src=/${randomFruit.image}" alt="" width="100">
                 <h3>${randomFruit.productName}</h3>
-                <h3>${randomFruit.city}</h3>
+                <span class="origin">${randomFruit.city}</span>
             </div>
         `;
 
@@ -314,15 +335,15 @@ const moveCard = (card) => {
         frontCard.remove();
         card.classList.remove('behind');
         card.classList.add('front');
-
+  
         // Create a new div for the next back card
         const newBackCard = document.createElement('div');
         newBackCard.classList.add('card-product', 'behind');
         newBackCard.innerHTML = `
             <div class="card">
-                <img src="../static/dragon.png" alt="" width="100">
+                <img src="/${randomFruit.image}" alt="" width="100">
                 <h3>${randomFruit.productName}</h3>
-                <h3>${randomFruit.city}</h3>
+                <span class="origin">${randomFruit.city}</span>
             </div>
         `;
 
