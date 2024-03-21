@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { TextureLoader } from 'three';
 import gsap from 'gsap'
 
@@ -16,12 +17,8 @@ let renderer, scene, camera, controls, rayCaster, pointer;
 let globeGroup, globeModel, groupLight, globeSelectionOuterMesh;
 
 const params = {
-    strokeColor: "#111111",
-    defaultColor: "#9a9591",
-    hoverColor: "#00C9A2",
-    strokeWidth: 2,
-    hiResScalingFactor: 2,
-    lowResScalingFactor: .7
+    imagePinSize:0.15,
+    imagePinTranslateY: 0.25
 }
 
 const sizes = {
@@ -33,13 +30,16 @@ let isTouchScreen = false;
 let isHoverable = true;
 
 const textureLoader = new THREE.TextureLoader();
+const fbxLoader = new FBXLoader();
+
+const gui = new dat.GUI();
 
 
 // Function to fetch city data
 const fetchFruits = () => {
     return fetch('fruits.json');
 };
-
+const fruits = []
 
 initScene();
 createControls();
@@ -88,23 +88,13 @@ function calcPosFromLatLngRad(lat, lng) {
 
 
 async function createGlobe() {
-
-    const fbxLoader = new FBXLoader()
+    
     fbxLoader.load(
     'globe-2.fbx',
         (object) => {
-            // object.traverse(function (child) {
-            //     if ((child as THREE.Mesh).isMesh) {
-            //         // (child as THREE.Mesh).material = material
-            //         if ((child as THREE.Mesh).material) {
-            //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
-            //         }
-            //     }
-            // })
-            globeModel = object;
             object.position.set(0,0,0)
             object.scale.set(1.80, 1.80, 1.80)
-            scene.add(object)
+            globeGroup.add(object)
 
         },
         (xhr) => {
@@ -120,57 +110,50 @@ async function createGlobe() {
 	const data = await res.json();
     console.log(data.fruits)
     data.fruits.forEach( point => {
-        //fruits.push(point)
+        fruits.push(point)
+        
         let coords = calcPosFromLatLngRad(point.coords.lat, point.coords.lng)
 
-        const fbxLoader = new FBXLoader()
-// fbxLoader.load(
-//     'pin.fbx',
-//     (object) => {
-//         // object.traverse(function (child) {
-//         //     if ((child as THREE.Mesh).isMesh) {
-//         //         // (child as THREE.Mesh).material = material
-//         //         if ((child as THREE.Mesh).material) {
-//         //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
-//         //         }
-//         //     }
-//         // })
-//         object.scale.set(10, 10, 10)
-//         object.rotation.y = 4.02
-//         object.position.copy(coords)
-//         //scene.add(object)
-//         object.position.y = 0.38
-//     },
-//     (xhr) => {
-//         console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-//     },
-//     (error) => {
-//         console.log(error)
-//     }
-// )
+        fbxLoader.load(
+        'pins.fbx',
+            (object) => {
+                object.position.copy(coords)
+                object.scale.set(0.002, 0.002, 0.002)
+                globeGroup.add(object)
     
-        let mesh = new THREE.Mesh(
-            new THREE.SphereBufferGeometry(0.05,20,20),
-            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+            },
+            (error) => {
+                console.log(error)
+            }
         )
-        //console.log(point.image)
+       
+        // let cityDot = new THREE.Mesh(
+        //     new THREE.SphereBufferGeometry(0.05,20,20),
+        //     new THREE.MeshBasicMaterial({ color: 0xff0000 })
+        // )
+        //cityDot.position.copy(coords)
+        //cityDot.userData.city = point.city
+        //cityDot.userData.productName = point.productName
         /** PLANE TEST */
-        const mangoustanTexture = textureLoader.load(point.image);
-        const planeGeometry = new THREE.CircleGeometry(0.25, 32); 
-        const planeMaterial = new THREE.MeshBasicMaterial({ map: mangoustanTexture, side: THREE.DoubleSide});
-        const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-        planeMesh.rotation.y = -Math.PI * 1; // Rotate the plane 90 degrees
+        const fruitImageTexture = textureLoader.load(point.image);
+
+        const imageMap = new THREE.CircleGeometry(params.imagePinSize, 32); 
+        const imageMapTexture = new THREE.MeshBasicMaterial({ map: fruitImageTexture, side: THREE.DoubleSide});
+        const imageMapMesh = new THREE.Mesh(imageMap, imageMapTexture);
         
-        //scene.add(planeMesh)
-        planeMesh.position.copy(coords)
+        // Update rotation and position of the image
+        imageMapMesh.rotation.y = Math.PI * 0.5;
+        imageMapMesh.position.copy(coords)
+        imageMapMesh.position.y += params.imagePinTranslateY;
             
         // Set userData for each mesh
-        mesh.userData.city = point.city
-        mesh.userData.productName = point.productName
-        globeGroup.add(mesh)
-        globeGroup.add(planeMesh, globeModel)
+        
+        globeGroup.add(imageMapMesh)
     
-        mesh.position.copy(coords)
+       
     })
 }
 
@@ -248,3 +231,109 @@ function updateSize() {
     containerEl.style.height = side + "px";
     renderer.setSize(side, side);
 }
+
+
+
+
+// ANIMATION AND INTERACTION CRACRA // 
+
+const rotateGlobe = (fruit) => {
+    // We get x,y,z coordinates from the latitude and longitude of a randomFruit 
+    const fruitPos = calcPosFromLatLngRad(fruit.coords.lat, fruit.coords.lng)
+    
+    // C'est là ou sa bloque
+    const angle = Math.atan2(fruitPos.z, fruitPos.x);
+
+    
+    controls.update(); // Ensure the controls are up to date with the camera position
+
+   // Et c'est surtout la où sa bloque, quelle est la bonne calculation de la rotation de y pour que le randomFruit tombe en face de la caméra
+    gsap.to(globeGroup.rotation, {
+        duration: 1,
+        y: angle * Math.PI / 2, 
+        ease: "power2.inOut"
+    });
+}
+
+
+// Select the card elements we'll need in HTML
+let frontCard = document.querySelector('.front');
+let backCard = document.querySelector('.behind');
+const cards = document.querySelector('.cards')
+
+// Animation for the first clicked card
+
+const rotateGlobeAndAnimateCards = () => {
+    const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
+
+    // Add 'is-moving' class to front card
+   
+    frontCard.classList.add('is-moving');
+
+    // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
+    setTimeout(() => {
+        frontCard.remove();
+        backCard.classList.remove('behind');
+        backCard.classList.add('front');
+
+        // Create a new div for the next back card
+        const newBackCard = document.createElement('div');
+        newBackCard.classList.add('card-product', 'behind');
+        newBackCard.innerHTML = `
+            <div class="card">
+                <img src="../static/dragon.png" alt="" width="100">
+                <h3>${randomFruit.productName}</h3>
+                <h3>${randomFruit.city}</h3>
+            </div>
+        `;
+
+        // Add click event listener to the new back card (for loop functionality)
+        cards.appendChild(newBackCard);
+        newBackCard.addEventListener('click', () => moveCard(newBackCard, randomFruit)); // Pass randomFruit here
+    }, 1000);
+
+    rotateGlobe(randomFruit);
+}
+
+document.getElementById('next').addEventListener('click', (e) => {
+    rotateGlobe();    
+}); 
+
+// When the back card is clicked, move the card and rotate the globe
+const moveCard = (card) => {
+    // Add 'is-moving' class to front card
+    let frontCard = document.querySelector('.front');
+    let backCard = document.querySelector('.behind');
+
+    const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
+    frontCard.classList.add('is-moving');
+
+    // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
+    setTimeout(() => {
+        frontCard.remove();
+        card.classList.remove('behind');
+        card.classList.add('front');
+
+        // Create a new div for the next back card
+        const newBackCard = document.createElement('div');
+        newBackCard.classList.add('card-product', 'behind');
+        newBackCard.innerHTML = `
+            <div class="card">
+                <img src="../static/dragon.png" alt="" width="100">
+                <h3>${randomFruit.productName}</h3>
+                <h3>${randomFruit.city}</h3>
+            </div>
+        `;
+
+        // Add click event listener to the new back card (for loop functionality)
+        cards.appendChild(newBackCard);
+        newBackCard.addEventListener('click', () => moveCard(newBackCard, randomFruit)); // Pass randomFruit here
+    }, 1000);
+
+    rotateGlobe(randomFruit);
+}
+
+// Add all our events
+backCard.addEventListener('click', () => {
+    rotateGlobeAndAnimateCards()
+});
