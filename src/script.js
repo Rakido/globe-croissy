@@ -2,19 +2,78 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
-import vertex from './shaders/test/vertex.glsl'
-import fragment from './shaders/test/fragment.glsl'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { TextureLoader } from 'three';
 import gsap from 'gsap'
 
 import map from '../static/textures/earth.jpg'
 import mangoustan from '../static/elmangoustan.png'
 
-// Importez TextureLoader correctement
-import { TextureLoader } from 'three';
+const canvasEl = document.querySelector('#globe-3d')
+const containerEl = document.querySelector(".globe-wrapper");
 
-// Créez un chargeur de texture
-const textureLoader = new TextureLoader();
+let renderer, scene, camera, controls, rayCaster, pointer;
+let globeGroup, globeModel, groupLight, globeSelectionOuterMesh;
+
+const params = {
+    strokeColor: "#111111",
+    defaultColor: "#9a9591",
+    hoverColor: "#00C9A2",
+    strokeWidth: 2,
+    hiResScalingFactor: 2,
+    lowResScalingFactor: .7
+}
+
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
+
+let isTouchScreen = false;
+let isHoverable = true;
+
+const textureLoader = new THREE.TextureLoader();
+
+
+// Function to fetch city data
+const fetchFruits = () => {
+    return fetch('fruits.json');
+};
+
+
+initScene();
+createControls();
+
+window.addEventListener("resize", updateSize);
+
+function initScene() {
+    
+    renderer = new THREE.WebGLRenderer({canvas: canvasEl, alpha: true});
+    
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    scene = new THREE.Scene();
+
+    camera = new THREE.OrthographicCamera(-1.2, 1.2, 1.2, -1.2, 0, 3);
+    camera.position.z = 1.3;
+
+    globeGroup = new THREE.Group();
+    scene.add(globeGroup);
+
+    rayCaster = new THREE.Raycaster();
+    rayCaster.far = 1.15;
+    pointer = new THREE.Vector2(-1, -1);
+
+    createOrbitControls();
+    
+    createGlobe();
+    createLights();
+
+    updateSize();
+
+    gsap.ticker.add(render);
+}
+
 
 /* Calculate coordinates */
 function calcPosFromLatLngRad(lat, lng) {
@@ -28,122 +87,40 @@ function calcPosFromLatLngRad(lat, lng) {
 }
 
 
-// Instance array to later stock the fruits data
-const fruits = []
+async function createGlobe() {
 
-// Function to fetch city data
-const fetchFruits = () => {
-	return fetch('fruits.json');
-};
-
-
-/**
- * DEBUG
- */
-const gui = new dat.GUI()
-
-
-
-/**
- *  BASE
- */
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
-
-// Scene
-const scene = new THREE.Scene()
-
-
-
-// Axis Helper
-//const axesHelper = new THREE.AxesHelper(5);
-//scene.add(axesHelper);
-
-/**
- * Objects
- */
-
-// Textures
-//const textureLoader = new THREE.TextureLoader()
-//const flagTexture = textureLoader.load('/textures/test-9.png')
-
-// Geometry
-
-// const globeMateriel = new THREE.MeshBasicMaterial({
-//     map: new THREE.TextureLoader().load(map)
-// })
-// let globe = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x00ff00 }))
-// scene.add(globe)
-// globe.rotation.y = -3.1
-// gui.add(globe.rotation, 'y').min(-5).max(5).step(0.1).name('rotateGlobeY')
-
-// Create a sphere geometry
-const geometry = new THREE.SphereBufferGeometry(1, 30, 30)
-const globeMateriel = new THREE.MeshBasicMaterial({
-    map: new THREE.TextureLoader().load(map)
-})
-let globe = new THREE.Mesh(geometry, globeMateriel)
-const material = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White color material
-const sphere = new THREE.Mesh(geometry, material);
-//scene.add(sphere);
-//scene.add(globe);
-
-let globeModel;
-
-
-// Define a function to update all three scale components
-
-
-// Add a GUI control to manipulate the scale
-const elGroup = new THREE.Group()
-
-const fbxLoader = new FBXLoader()
+    const fbxLoader = new FBXLoader()
     fbxLoader.load(
     'globe-2.fbx',
-    (object) => {
-        // object.traverse(function (child) {
-        //     if ((child as THREE.Mesh).isMesh) {
-        //         // (child as THREE.Mesh).material = material
-        //         if ((child as THREE.Mesh).material) {
-        //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
-        //         }
-        //     }
-        // })
-        globeModel = object;
-        object.position.set(0,0,0)
-        //object.rotation.y = -3.1;
-        //object.rotation.x = 0.2;
-        //object.rotation.z = 0;
-        gui.add(object.rotation, 'y').min(-5).max(5).step(0.1).name('rotateGlobeY')
-        gui.add(object.rotation, 'x').min(-5).max(5).step(0.1).name('rotateGlobeX')
-        gui.add(object.rotation, 'z').min(-5).max(5).step(0.1).name('rotateGlobeZ')
-        object.scale.set(1.80, 1.80, 1.80)
-        //object.rotation.y = 4.6
-        function updateScale(value) {
-            object.scale.set(value, value, value);
+        (object) => {
+            // object.traverse(function (child) {
+            //     if ((child as THREE.Mesh).isMesh) {
+            //         // (child as THREE.Mesh).material = material
+            //         if ((child as THREE.Mesh).material) {
+            //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
+            //         }
+            //     }
+            // })
+            globeModel = object;
+            object.position.set(0,0,0)
+            object.scale.set(1.80, 1.80, 1.80)
+            scene.add(object)
+
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+            console.log(error)
         }
-        gui.add({ scale: 1 }, 'scale').min(0.001).max(5 ).step(0.0001).onChange(updateScale);
-        
-        scene.add(object)
+    )
 
-    },
-    (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-    },
-    (error) => {
-        console.log(error)
-    }
-)
-
-let pointsGroup = new THREE.Group()
-let meshesGroup = new THREE.Group()
-
-async function createGlobe() {
 	// Fetch city data
 	const res = await fetchFruits();
 	const data = await res.json();
+    console.log(data.fruits)
     data.fruits.forEach( point => {
-        fruits.push(point)
+        //fruits.push(point)
         let coords = calcPosFromLatLngRad(point.coords.lat, point.coords.lng)
 
         const fbxLoader = new FBXLoader()
@@ -189,294 +166,85 @@ async function createGlobe() {
             
         // Set userData for each mesh
         mesh.userData.city = point.city
-        //console.log(point.productName)
         mesh.userData.productName = point.productName
-        meshesGroup.add(mesh)
-        pointsGroup.add(meshesGroup, planeMesh, globeModel)
-        scene.add(pointsGroup)
+        globeGroup.add(mesh)
+        globeGroup.add(planeMesh, globeModel)
     
         mesh.position.copy(coords)
     })
-    //console.log(pinGroup)
-    //console.log(pointsGroup)
-    // Add pointsGroup and pinGroup to elGroup after they are populated with children
-    elGroup.add(pointsGroup)
-    //console.log(pointsGroup)
 }
 
-scene.add(elGroup)
-createGlobe()
+function createLights() {
+    // Create a directional light
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 0, 5); // Adjust position as needed
+    scene.add(directionalLight);
 
-
-// let x = Math.cos(lng) * Math.sin(lat)
-// let y = Math.sin(lng) * Math.sin(lat)
-// let z = Math.cos(lat)
-
-
-/* HANDLE EVENTS */
-// Raycaster
-const raycaster = new THREE.Raycaster()
-const pointer = new THREE.Vector2()
-
-// Event listener for mouse click on canvas
-canvas.addEventListener('click', onClick)
-
-function onClick(event) {
-    // Calculate mouse position in normalized device coordinates
-    const mouse = {
-        x: (event.clientX / sizes.width) * 2 - 1,
-        y: -(event.clientY / sizes.height) * 2 + 1
-    };
-
-    // Update the raycaster with the mouse position
-    raycaster.setFromCamera(mouse, camera);
-
-    // Calculate objects intersecting the raycaster
-    const intersects = raycaster.intersectObjects(scene.children);
-
-    // If there is an intersection with a mesh, handle it
-    if (intersects.length > 0) {
-
-        // const mesh = intersects[0].object;
-        // console.log(mesh)
-        // //mesh.scale.set(2,2,2)
-        // const title = mesh.userData.city; // Assuming you set userData for each mesh
-        //const productName = mesh.userData.productName; // Assuming you set userData for each mesh
-        //positionHTMLCard(mesh, title, productName)
-        
-        // Perform any actions you want here
-    }
+    // You can add more lights as needed, e.g., ambient light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
 }
 
-// function positionHTMLCard(mesh, title, productName) {
-//     console.log(`Clicked on mesh with title: ${title}`);
-//     // Create or update the HTML card
-//     let card = document.querySelector('.mesh-card')
-//     if (!card) {
-//         // Create card if not exists
-//         card = document.createElement('div')
-//         card.classList.add('mesh-card')
-//         document.body.appendChild(card)
-//     }
-//     // Position the card above the mesh
-//     const meshPosition = mesh.getWorldPosition(new THREE.Vector3())
-//     const screenPosition = meshPosition.project(camera)
-//     const screenWidth = window.innerWidth
-//     const screenHeight = window.innerHeight
-//     const x = (screenPosition.x + 1) * screenWidth / 2
-//     const y = -(screenPosition.y - 1) * screenHeight / 2
-//     card.style.left = x + 'px'
-//     card.style.top = y + 'px'
-//     // Set content of the card
-//     card.innerHTML = `
-//         <h3>${title}</h3>
-//         <p>${productName}</p>
-//         <!-- Add any other content you want -->
-//     `
-// }
+function createOrbitControls() {
+    controls = new OrbitControls(camera, canvasEl);
+    controls.enablePan = false;
+    // controls.enableZoom = false;
+    controls.enableDamping = true;
+    controls.minPolarAngle = .46 * Math.PI;
+    controls.maxPolarAngle = .46 * Math.PI;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed *= 1.2;
 
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-/**
- * Camera
- */
-
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.set(0, 0, -3)
-//gui.add(camera.position, 'z').min(0).max(20).step(0.01).name('frequencyX')
-//gui.add(mesh.position.y, 'x').min(-20).max(100).step(1).name("x")
-scene.add(camera)
-gui.add(camera.position, 'y').min(0).max(20).step(0.01).name('camX')
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
-// Renderer
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    alpha: true
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor( 0xFFFFFF, 1 );
-
-//Load background texture
-
-/** Light */
-
-const groupLight = new THREE.Group();
-
-// Create blue light from the right
-const rightLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-rightLight.position.set(10, 0, 0);
-rightLight.target = sphere;
-groupLight.add(rightLight)
-
-// Create green light from the left
-const topLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-topLight.position.set(0, 10, 0);
-topLight.target = sphere;
-groupLight.add(topLight)
-
-// Create red light from the top
-const leftLight = new THREE.DirectionalLight(0xFFFFFF, 1);
-leftLight.position.set(-10, 0, 0);
-leftLight.target = sphere;
-groupLight.add(leftLight)
-
-/**
- * Animate
- */
-
-
-const clock = new THREE.Clock()
-//console.log(material.uniforms)
-const tick = () =>
-{   
-    const elapsedTime = clock.getElapsedTime()
-    // Update controls
-    controls.update()
-    // Render
-    renderer.render(scene, camera)
-
-    // Rotate the globeModel if it has been loaded
-    if (globeModel) {
-        //globeModel.rotation.y = elapsedTime * 0.1;
-        //pointsGroup.rotation.y = elapsedTime * 0.1;
-    }
-    camera.add(groupLight)
-    //console.log(pinGroup.rotation.y)
-    
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
-
-    
-}
-
-tick()
-
-// Select the card elements we'll need in HTML
-let frontCard = document.querySelector('.front');
-let backCard = document.querySelector('.behind');
-const cards = document.querySelector('.cards')
-
-
-// Animation and interaction functions 
-
-const rotateGlobe = (fruit) => {
-    // We get x,y,z coordinates from the latitude and longitude of a randomFruit 
-    const fruitPos = calcPosFromLatLngRad(fruit.coords.lat, fruit.coords.lng)
-    
-    // C'est là ou sa bloque
-    const angle = Math.atan2(fruitPos.z, fruitPos.x);
-
-    
-    controls.update(); // Ensure the controls are up to date with the camera position
-
-   // Et c'est surtout la où sa bloque, quelle est la bonne calculation de la rotation de y pour que le randomFruit tombe en face de la caméra
-    gsap.to(elGroup.rotation, {
-        duration: 1,
-        y: angle * Math.PI / 2, 
-        ease: "power2.inOut"
+    controls.addEventListener("start", () => {
+        isHoverable = false;
+        pointer = new THREE.Vector2(-1, -1);
+        gsap.to(globeGroup.scale, {
+            duration: .3,
+            x: .9,
+            y: .9,
+            z: .9,
+            ease: "power1.inOut"
+        })
+    });
+    controls.addEventListener("end", () => {
+        // isHoverable = true;
+        gsap.to(globeGroup.scale, {
+            duration: .6,
+            x: 1,
+            y: 1,
+            z: 1,
+            ease: "back(1.7).out",
+            onComplete: () => {
+                isHoverable = true;
+            }
+        })
     });
 }
 
-// Animation for the first clicked card
-
-const rotateGlobeAndAnimateCards = () => {
-    const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
-
-    // Add 'is-moving' class to front card
-   
-    frontCard.classList.add('is-moving');
-
-    // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
-    setTimeout(() => {
-        frontCard.remove();
-        backCard.classList.remove('behind');
-        backCard.classList.add('front');
-
-        // Create a new div for the next back card
-        const newBackCard = document.createElement('div');
-        newBackCard.classList.add('card-product', 'behind');
-        newBackCard.innerHTML = `
-            <div class="card">
-                <img src="../static/dragon.png" alt="" width="100">
-                <h3>${randomFruit.productName}</h3>
-                <h3>${randomFruit.city}</h3>
-            </div>
-        `;
-
-        // Add click event listener to the new back card (for loop functionality)
-        cards.appendChild(newBackCard);
-        newBackCard.addEventListener('click', () => moveCard(newBackCard, randomFruit)); // Pass randomFruit here
-    }, 1000);
-
-    rotateGlobe(randomFruit);
+function createControls() {
+    const gui = new dat.GUI();
+	
 }
 
-document.getElementById('next').addEventListener('click', (e) => {
-    rotateGlobe();    
-}); 
+function render() {
+    controls.update();
 
-// When the back card is clicked, move the card and rotate the globe
-const moveCard = (card) => {
-    // Add 'is-moving' class to front card
-    let frontCard = document.querySelector('.front');
-    let backCard = document.querySelector('.behind');
+    if (isHoverable) {
+        rayCaster.setFromCamera(pointer, camera);
+        
+    }
 
-    const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
-    frontCard.classList.add('is-moving');
+    if (isTouchScreen && isHoverable) {
+        isHoverable = false;
+    }
 
-    // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
-    setTimeout(() => {
-        frontCard.remove();
-        card.classList.remove('behind');
-        card.classList.add('front');
-
-        // Create a new div for the next back card
-        const newBackCard = document.createElement('div');
-        newBackCard.classList.add('card-product', 'behind');
-        newBackCard.innerHTML = `
-            <div class="card">
-                <img src="../static/dragon.png" alt="" width="100">
-                <h3>${randomFruit.productName}</h3>
-                <h3>${randomFruit.city}</h3>
-            </div>
-        `;
-
-        // Add click event listener to the new back card (for loop functionality)
-        cards.appendChild(newBackCard);
-        newBackCard.addEventListener('click', () => moveCard(newBackCard, randomFruit)); // Pass randomFruit here
-    }, 1000);
-
-    rotateGlobe(randomFruit);
+    renderer.render(scene, camera);
 }
 
-// Add all our events
-backCard.addEventListener('click', () => {
-    rotateGlobeAndAnimateCards()
-});
+
+function updateSize() {
+    const side = Math.min(500, Math.min(window.innerWidth, window.innerHeight) - 50);
+    containerEl.style.width = side + "px";
+    containerEl.style.height = side + "px";
+    renderer.setSize(side, side);
+}
