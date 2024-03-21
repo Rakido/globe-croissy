@@ -96,10 +96,10 @@ function calcPosFromLatLngRad(lat, lng) {
 async function createGlobe() {
     
     fbxLoader.load(
-    'globe-2.fbx',
+    'globe-sync-2.fbx',
         (object) => {
-            object.position.set(0,0,0)
-            object.scale.set(1.80, 1.80, 1.80)
+            object.scale.set(0.0018, 0.0018, 0.0018); 
+            object.rotation.y = Math.PI
             globeModel = object;
             globeGroup.add(globeModel)
 
@@ -126,6 +126,7 @@ async function createGlobe() {
             (object) => {
                 object.position.copy(coords)
                 object.scale.set(0.002, 0.002, 0.002)
+                
                 globeGroup.add(object)
     
             },
@@ -167,13 +168,20 @@ async function createGlobe() {
 
 function createLights() {
     // Create a directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(0, 0, 5); // Adjust position as needed
-    scene.add(directionalLight);
-
-    // You can add more lights as needed, e.g., ambient light
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
+
+    const rightLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    rightLight.position.set(10, 0, 0);
+    scene.add(rightLight);
+
+    const leftLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    leftLight.position.set(-10, 0, 0);
+    scene.add(leftLight);
+
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    topLight.position.set(0, 10, 0);
+    scene.add(topLight);
 }
 
 function createOrbitControls() {
@@ -183,8 +191,8 @@ function createOrbitControls() {
     controls.enableDamping = true;
     controls.minPolarAngle = .46 * Math.PI;
     controls.maxPolarAngle = .46 * Math.PI;
-    //controls.autoRotate = true;
-    controls.autoRotateSpeed *= 1.2;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed *= 1;
 
     controls.addEventListener("start", () => {
         isHoverable = false;
@@ -228,7 +236,7 @@ function createControls() {
 
 function render() {
     controls.update();
-
+    
     // if (globeModel) {
     //     globeModel.rotation.set(debugParams.rotationX, debugParams.rotationY, debugParams.rotationZ);
     // }
