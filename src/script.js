@@ -146,6 +146,7 @@ async function createGlobe() {
         
         // Update rotation and position of the image
         imageMapMesh.rotation.y = Math.PI * 0.5;
+        imageMapMesh.position.x += 0.01;
         imageMapMesh.position.copy(coords)
         imageMapMesh.position.y += params.imagePinTranslateY;
             
