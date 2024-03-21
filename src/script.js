@@ -204,7 +204,7 @@ async function createGlobe() {
     //console.log(pointsGroup)
 }
 
-
+scene.add(elGroup)
 createGlobe()
 
 
@@ -378,30 +378,33 @@ const tick = () =>
 
 tick()
 
+// Select the card elements we'll need in HTML
+let frontCard = document.querySelector('.front');
+let backCard = document.querySelector('.behind');
+const cards = document.querySelector('.cards')
 
-scene.add(elGroup)
+
+// Animation and interaction functions 
 
 const rotateGlobe = (fruit) => {
-
+    // We get x,y,z coordinates from the latitude and longitude of a randomFruit 
     const fruitPos = calcPosFromLatLngRad(fruit.coords.lat, fruit.coords.lng)
-    const angle = Math.atan2(fruitPos.z, fruitPos.x);
-    //const randomMesh = meshesArray[Math.floor(Math.random()*meshesArray.length)];
-    const randomRotation = Math.random() * Math.PI * 2; // Random rotation between 0 and 2PI
     
-    // Update camera position
+    // C'est là ou sa bloque
+    const angle = Math.atan2(fruitPos.z, fruitPos.x);
+
+    
     controls.update(); // Ensure the controls are up to date with the camera position
-    console.log(fruitPos)
-    //const targetDirection = randomMesh.position.clone().sub(camera.position).normalize();
 
-    // Calculate the angle between the camera direction and the y-axis
-    //const angle = Math.atan2(targetDirection.z, targetDirection.x);
-
+   // Et c'est surtout la où sa bloque, quelle est la bonne calculation de la rotation de y pour que le randomFruit tombe en face de la caméra
     gsap.to(elGroup.rotation, {
         duration: 1,
-        y: angle * Math.PI / 2, // Adjust for starting orientation
+        y: angle * Math.PI / 2, 
         ease: "power2.inOut"
     });
 }
+
+// Animation for the first clicked card
 
 const rotateGlobeAndAnimateCards = () => {
     const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
@@ -423,6 +426,7 @@ const rotateGlobeAndAnimateCards = () => {
             <div class="card">
                 <img src="../static/dragon.png" alt="" width="100">
                 <h3>${randomFruit.productName}</h3>
+                <h3>${randomFruit.city}</h3>
             </div>
         `;
 
@@ -438,16 +442,7 @@ document.getElementById('next').addEventListener('click', (e) => {
     rotateGlobe();    
 }); 
 
-
-// Select the card elements
-let frontCard = document.querySelector('.front');
-let backCard = document.querySelector('.behind');
-const cards = document.querySelector('.cards')
-
-backCard.addEventListener('click', () => {
-    rotateGlobeAndAnimateCards()
-});
-
+// When the back card is clicked, move the card and rotate the globe
 const moveCard = (card) => {
     // Add 'is-moving' class to front card
     let frontCard = document.querySelector('.front');
@@ -480,3 +475,8 @@ const moveCard = (card) => {
 
     rotateGlobe(randomFruit);
 }
+
+// Add all our events
+backCard.addEventListener('click', () => {
+    rotateGlobeAndAnimateCards()
+});
