@@ -24,7 +24,7 @@ scene.add(directionalLight);
 // Load FBX model
 const fbxLoader = new FBXLoader();
 fbxLoader.load(
-    'globe-sync-2.fbx',
+    'globe.fbx',
     (object) => {
         object.scale.set(0.001, 0.001, 0.001); // Adjust scale as needed
         scene.add(object);

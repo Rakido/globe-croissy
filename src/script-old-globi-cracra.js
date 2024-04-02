@@ -7,8 +7,8 @@ import fragment from './shaders/test/fragment.glsl'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import gsap from 'gsap'
 
-import map from '../static/textures/earth.jpg'
-import mangoustan from '../static/elmangoustan.png'
+// import map from '../static/textures/earth.jpg'
+// import mangoustan from '../static/elmangoustan.png'
 
 // Importez TextureLoader correctement
 import { TextureLoader } from 'three';
@@ -18,13 +18,13 @@ const textureLoader = new TextureLoader();
 
 /* Calculate coordinates */
 function calcPosFromLatLngRad(lat, lng) {
-    const phi = (lat) * (Math.PI/180)
-    const theta = (lng+180) * (Math.PI/180)
+    const phi = (lat) * (Math.PI / 180)
+    const theta = (lng + 180) * (Math.PI / 180)
     let x = -(Math.cos(phi) * Math.cos(theta))
     let z = (Math.cos(phi) * Math.sin(theta))
     let y = (Math.sin(phi))
 
-    return {x,y,z}
+    return { x, y, z }
 }
 
 
@@ -33,7 +33,7 @@ const fruits = []
 
 // Function to fetch city data
 const fetchFruits = () => {
-	return fetch('fruits.json');
+    return fetch('fruits.json');
 };
 
 
@@ -87,8 +87,8 @@ const scene = new THREE.Scene()
 const elGroup = new THREE.Group()
 
 const fbxLoader = new FBXLoader()
-    fbxLoader.load(
-    'globe-2.fbx',
+fbxLoader.load(
+    'globe.fbx',
     (object) => {
         // object.traverse(function (child) {
         //     if ((child as THREE.Mesh).isMesh) {
@@ -99,7 +99,7 @@ const fbxLoader = new FBXLoader()
         //     }
         // })
         globeModel = object;
-        object.position.set(0,0,0)
+        object.position.set(0, 0, 0)
         //object.rotation.y = -3.1;
         //object.rotation.x = 0.2;
         //object.rotation.z = 0;
@@ -111,8 +111,8 @@ const fbxLoader = new FBXLoader()
         function updateScale(value) {
             object.scale.set(value, value, value);
         }
-        gui.add({ scale: 1 }, 'scale').min(0.001).max(5 ).step(0.0001).onChange(updateScale);
-        
+        gui.add({ scale: 1 }, 'scale').min(0.001).max(5).step(0.0001).onChange(updateScale);
+
         scene.add(object)
 
     },
@@ -128,54 +128,54 @@ let pointsGroup = new THREE.Group()
 let meshesGroup = new THREE.Group()
 
 async function createGlobe() {
-	// Fetch city data
-	const res = await fetchFruits();
-	const data = await res.json();
-    data.fruits.forEach( point => {
+    // Fetch city data
+    const res = await fetchFruits();
+    const data = await res.json();
+    data.fruits.forEach(point => {
         fruits.push(point)
         let coords = calcPosFromLatLngRad(point.coords.lat, point.coords.lng)
 
         const fbxLoader = new FBXLoader()
-// fbxLoader.load(
-//     'pin.fbx',
-//     (object) => {
-//         // object.traverse(function (child) {
-//         //     if ((child as THREE.Mesh).isMesh) {
-//         //         // (child as THREE.Mesh).material = material
-//         //         if ((child as THREE.Mesh).material) {
-//         //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
-//         //         }
-//         //     }
-//         // })
-//         object.scale.set(10, 10, 10)
-//         object.rotation.y = 4.02
-//         object.position.copy(coords)
-//         //scene.add(object)
-//         object.position.y = 0.38
-//     },
-//     (xhr) => {
-//         console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-//     },
-//     (error) => {
-//         console.log(error)
-//     }
-// )
-    
+        // fbxLoader.load(
+        //     'pin.fbx',
+        //     (object) => {
+        //         // object.traverse(function (child) {
+        //         //     if ((child as THREE.Mesh).isMesh) {
+        //         //         // (child as THREE.Mesh).material = material
+        //         //         if ((child as THREE.Mesh).material) {
+        //         //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
+        //         //         }
+        //         //     }
+        //         // })
+        //         object.scale.set(10, 10, 10)
+        //         object.rotation.y = 4.02
+        //         object.position.copy(coords)
+        //         //scene.add(object)
+        //         object.position.y = 0.38
+        //     },
+        //     (xhr) => {
+        //         console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        //     },
+        //     (error) => {
+        //         console.log(error)
+        //     }
+        // )
+
         let mesh = new THREE.Mesh(
-            new THREE.SphereBufferGeometry(0.05,20,20),
+            new THREE.SphereBufferGeometry(0.05, 20, 20),
             new THREE.MeshBasicMaterial({ color: 0xff0000 })
         )
         //console.log(point.image)
         /** PLANE TEST */
         const mangoustanTexture = textureLoader.load(point.image);
-        const planeGeometry = new THREE.CircleGeometry(0.25, 32); 
-        const planeMaterial = new THREE.MeshBasicMaterial({ map: mangoustanTexture, side: THREE.DoubleSide});
+        const planeGeometry = new THREE.CircleGeometry(0.25, 32);
+        const planeMaterial = new THREE.MeshBasicMaterial({ map: mangoustanTexture, side: THREE.DoubleSide });
         const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
         planeMesh.rotation.y = -Math.PI * 1; // Rotate the plane 90 degrees
-        
+
         //scene.add(planeMesh)
         planeMesh.position.copy(coords)
-            
+
         // Set userData for each mesh
         mesh.userData.city = point.city
         //console.log(point.productName)
@@ -183,14 +183,12 @@ async function createGlobe() {
         meshesGroup.add(mesh)
         pointsGroup.add(meshesGroup, planeMesh, globeModel)
         scene.add(pointsGroup)
-    
+
         mesh.position.copy(coords)
     })
-    //console.log(pinGroup)
-    //console.log(pointsGroup)
+
     // Add pointsGroup and pinGroup to elGroup after they are populated with children
     elGroup.add(pointsGroup)
-    //console.log(pointsGroup)
 }
 
 scene.add(elGroup)
@@ -232,7 +230,7 @@ function onClick(event) {
         // const title = mesh.userData.city; // Assuming you set userData for each mesh
         //const productName = mesh.userData.productName; // Assuming you set userData for each mesh
         //positionHTMLCard(mesh, title, productName)
-        
+
         // Perform any actions you want here
     }
 }
@@ -272,8 +270,7 @@ const sizes = {
     height: window.innerHeight
 }
 
-window.addEventListener('resize', () =>
-{
+window.addEventListener('resize', () => {
     // Update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
@@ -310,7 +307,7 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor( 0xFFFFFF, 1 );
+renderer.setClearColor(0xFFFFFF, 1);
 
 //Load background texture
 
@@ -343,8 +340,7 @@ groupLight.add(leftLight)
 
 const clock = new THREE.Clock()
 //console.log(material.uniforms)
-const tick = () =>
-{   
+const tick = () => {
     const elapsedTime = clock.getElapsedTime()
     // Update controls
     controls.update()
@@ -358,11 +354,11 @@ const tick = () =>
     }
     camera.add(groupLight)
     //console.log(pinGroup.rotation.y)
-    
+
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 
-    
+
 }
 
 tick()
@@ -378,17 +374,17 @@ const cards = document.querySelector('.cards')
 const rotateGlobe = (fruit) => {
     // We get x,y,z coordinates from the latitude and longitude of a randomFruit 
     const fruitPos = calcPosFromLatLngRad(fruit.coords.lat, fruit.coords.lng)
-    
+
     // C'est là ou sa bloque
     const angle = Math.atan2(fruitPos.z, fruitPos.x);
 
-    
+
     controls.update(); // Ensure the controls are up to date with the camera position
 
-   // Et c'est surtout la où sa bloque, quelle est la bonne calculation de la rotation de y pour que le randomFruit tombe en face de la caméra
+    // Et c'est surtout la où sa bloque, quelle est la bonne calculation de la rotation de y pour que le randomFruit tombe en face de la caméra
     gsap.to(elGroup.rotation, {
         duration: 1,
-        y: angle * Math.PI / 2, 
+        y: angle * Math.PI / 2,
         ease: "power2.inOut"
     });
 }
@@ -399,7 +395,7 @@ const rotateGlobeAndAnimateCards = () => {
     const randomFruit = fruits[Math.floor(Math.random() * fruits.length)];
 
     // Add 'is-moving' class to front card
-   
+
     frontCard.classList.add('is-moving');
 
     // After 1 second, remove front card element, remove 'behind' class from back card, add 'front' class to back card
@@ -428,8 +424,8 @@ const rotateGlobeAndAnimateCards = () => {
 }
 
 document.getElementById('next').addEventListener('click', (e) => {
-    rotateGlobe();    
-}); 
+    rotateGlobe();
+});
 
 // When the back card is clicked, move the card and rotate the globe
 const moveCard = (card) => {
