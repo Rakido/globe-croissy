@@ -4,61 +4,61 @@
          "productName": "Baie du Miracle",
           "city": "Côte d'Ivoire",
           "coords": {"lat": "7.591854552950674", "lng": "-5.414235775339133"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/baie-miracle.png"
       },
       {
           "productName": "KognomuSso",
           "city": "Côte d'Ivoire",
           "coords": {"lat": "5.253285717509604", "lng": "-7.016966594773878"},
-          "image": "miracle.png"
+          "image": "fruits-images/kognomusso.png"
       },
       {
           "productName": "Mangoustan",
           "city": "Indonésie",
           "coords": {"lat": "-4.519730670894846", "lng": "122.32711631779962"},
-          "image": "dragon.png"
+          "image": "fruits-images/mangoustan.png"
       },
       {
           "productName": "Granadilla",
           "city": "Équateur",
           "coords": {"lat": "-1.21093873769599", "lng": "-78.35005074401974"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/granadilla.png"
       },
       {
           "productName": "Pitaya",
           "city": "Colombie",
           "coords": {"lat": "3.890244421737529", "lng": "-73.1386364221287"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/pitaya.png"
       },
       {
           "productName": "Fruit de la passion",
           "city": "Vietnam",
           "coords": {"lat": "15.40647635330926", "lng": "108.22795177267524"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/fruit-passion.png"
       },
       {
           "productName": "Fruit du serpent",
           "city": "Indonésie",
           "coords": {"lat": "-1.1775294158918261", "lng": "121.91174575597134"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/fruit-du-serpent.png"
       },
       {
           "productName": "Sapotille",
           "city": "Viêt Nam",
           "coords": {"lat": "17.21611618901781", "lng": "106.65169735753416"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/sapotille.png"
       },
       {
           "productName": "Fruit du sein",
           "city": "Vietnam",
           "coords": {"lat": "12.29512045298434", "lng": "108.97404401895668"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/fruit-du-sein.png"
       },
       {
           "productName": "Carolina reaper",
           "city": "Espagne",
           "coords": {"lat": "39.88382099771359", "lng": "-3.4713022856979427"},
-          "image": "elmangoustan.png"
+          "image": "fruits-images/carolina-reaper.png"
       }
   ]
 }
